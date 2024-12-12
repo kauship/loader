@@ -26,6 +26,7 @@ def element_to_dict(elem):
         else:
             node[child.tag] = child_dict
 
+    # Include text content in the dictionary (if available)
     if elem.text and elem.text.strip():
         if node:
             node["_text"] = elem.text.strip()
@@ -36,12 +37,16 @@ def element_to_dict(elem):
 
 def process_chunk(chunk, output_dir, chunk_id):
     """
-    Process a single chunk of XML data.
+    Process a single chunk of XML data and write it to a JSON file.
     """
     messages = []
     for message in chunk:
+        # Parse the <Message> element into a dictionary
         parsed_message = element_to_dict(message)
         messages.append(parsed_message)
+
+    # Log the first few parsed messages for debugging
+    logging.debug(f"Processed chunk {chunk_id}, first few messages: {messages[:3]}")
 
     # Write the chunk to a JSON file
     output_file = os.path.join(output_dir, f"output_{chunk_id}.json")
@@ -105,7 +110,7 @@ def parallel_parse_and_convert(file_path, chunk_size, output_dir, num_workers):
 if __name__ == "__main__":
     input_file = "large_file.xml"  # Path to your XML file
     output_directory = "json_output"  # Directory to save JSON files
-    chunk_size = 1000  # Number of messages per chunk
+    chunk_size = 100  # Number of messages per chunk (for debugging, use smaller size)
     num_workers = 4  # Number of parallel processes
 
     logging.info("Starting parallel ETL process.")
