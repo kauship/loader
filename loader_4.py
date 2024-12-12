@@ -59,15 +59,18 @@ def split_xml(file_path, chunk_size):
     context = ET.iterparse(file_path, events=("start", "end"))
     current_chunk = []
     chunks = []
+    
+    # Iterate over XML and group <Message> elements into chunks
     for event, elem in context:
         if event == "end" and elem.tag == "Message":
             current_chunk.append(elem)
-            elem.clear()
+            elem.clear()  # Free memory after processing element
 
             if len(current_chunk) >= chunk_size:
                 chunks.append(current_chunk)
                 current_chunk = []
 
+    # Add the remaining chunk if any
     if current_chunk:
         chunks.append(current_chunk)
 
