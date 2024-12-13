@@ -15,10 +15,9 @@ def element_to_dict(elem):
     """
     Convert an XML element (with potential nested structure) to a dictionary.
     """
-    node = {**elem.attrib}  # Base dictionary with attributes, if any
-
+    node = {**elem.attrib}  # Include element's attributes
     for child in elem:
-        child_dict = element_to_dict(child)  # Recursive call
+        child_dict = element_to_dict(child)  # Recursive call for children
         if child.tag in node:
             if not isinstance(node[child.tag], list):
                 node[child.tag] = [node[child.tag]]
@@ -26,7 +25,7 @@ def element_to_dict(elem):
         else:
             node[child.tag] = child_dict
 
-    # Include text content in the dictionary (if available)
+    # Include text content
     if elem.text and elem.text.strip():
         if node:
             node["_text"] = elem.text.strip()
@@ -45,9 +44,6 @@ def process_chunk(chunk, output_dir, chunk_id):
         parsed_message = element_to_dict(message)
         messages.append(parsed_message)
 
-    # Log the first few parsed messages for debugging
-    logging.debug(f"Processed chunk {chunk_id}, first few messages: {messages[:3]}")
-
     # Write the chunk to a JSON file
     output_file = os.path.join(output_dir, f"output_{chunk_id}.json")
     with open(output_file, "w") as f:
@@ -64,16 +60,18 @@ def split_xml(file_path, chunk_size):
     context = ET.iterparse(file_path, events=("start", "end"))
     current_chunk = []
     chunks = []
-    
+
     # Iterate over XML and group <Message> elements into chunks
     for event, elem in context:
-        if event == "end" and elem.tag == "Message":
+        if event == "end" and elem.tag == "instrument":
+            # Convert element to a dictionary *before* clearing it
             current_chunk.append(elem)
-            elem.clear()  # Free memory after processing element
-
+            
             if len(current_chunk) >= chunk_size:
                 chunks.append(current_chunk)
                 current_chunk = []
+            
+            elem.clear()  # Free memory after element is fully processed
 
     # Add the remaining chunk if any
     if current_chunk:
@@ -110,7 +108,7 @@ def parallel_parse_and_convert(file_path, chunk_size, output_dir, num_workers):
 if __name__ == "__main__":
     input_file = "large_file.xml"  # Path to your XML file
     output_directory = "json_output"  # Directory to save JSON files
-    chunk_size = 100  # Number of messages per chunk (for debugging, use smaller size)
+    chunk_size = 100  # Number of messages per chunk
     num_workers = 4  # Number of parallel processes
 
     logging.info("Starting parallel ETL process.")
