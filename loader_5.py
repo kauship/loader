@@ -30,6 +30,15 @@ def element_to_dict(elem):
         node["_text"] = elem.text.strip()
     return node
 
+async def write_json(output_dir, chunk_id, messages):
+    """
+    Asynchronously write JSON to a file.
+    """
+    output_file = os.path.join(output_dir, f"output_{chunk_id}.json")
+    async with aio_open(output_file, "w") as f:
+        await f.write(json.dumps(messages, indent=2))
+    logging.info(f"Written chunk {chunk_id} with {len(messages)} messages.")
+
 def parse_and_convert(file_path, start_tag, chunk_size, chunk_id):
     """
     Parse a segment of the XML file and convert it to JSON.
@@ -54,24 +63,19 @@ def parse_and_convert(file_path, start_tag, chunk_size, chunk_id):
     if messages:
         yield messages
 
-async def write_json(output_dir, chunk_id, messages):
-    """
-    Asynchronously write JSON to a file.
-    """
-    output_file = os.path.join(output_dir, f"output_{chunk_id}.json")
-    async with aio_open(output_file, "w") as f:
-        await f.write(json.dumps(messages, indent=2))
-    logging.info(f"Written chunk {chunk_id} with {len(messages)} messages.")
-
 def process_chunk(file_path, start_tag, output_dir, chunk_size, chunk_id):
     """
     Process a chunk of the XML file, parse, and write to JSON.
     """
-    results = []
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    
+    # Parse the XML chunk and get messages
     for messages in parse_and_convert(file_path, start_tag, chunk_size, chunk_id):
-        results.append(asyncio.run(write_json(output_dir, chunk_id, messages)))
+        loop.run_until_complete(write_json(output_dir, chunk_id, messages))
         chunk_id += 1
-    return results
+
+    loop.close()
 
 def parallel_process(file_path, output_dir, start_tag, chunk_size, num_workers):
     """
@@ -90,7 +94,7 @@ def parallel_process(file_path, output_dir, start_tag, chunk_size, num_workers):
 if __name__ == "__main__":
     input_file = "large_file.xml"  # Replace with your file
     output_directory = "json_output"
-    start_tag = "instrument"  # Root tag of messages
+    start_tag = "Message"  # Root tag of messages
     chunk_size = 100
     num_workers = cpu_count()
 
