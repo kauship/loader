@@ -1,0 +1,11 @@
+KPI Calculation
+Each aspect score is between 0 and 1.
+
+Weighted KPI = Sum of (Aspect Score × Weight)
+
+Example:
+Logging: 1 × 0.20 = 0.20
+Metrics: 0.5 × 0.20 = 0.10
+Tracing: 0.5 × 0.15 = 0.075
+…
+Total KPI Score = sum of all = e.g., 0.78 (78%)
